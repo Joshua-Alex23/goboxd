@@ -7,6 +7,7 @@ import (
 	"log"
 
 	"github.com/thesouldev/goboxd/internal/models"
+	"github.com/thesouldev/goboxd/internal/validate"
 	
 )
 
@@ -17,6 +18,12 @@ func Run(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid json", http.StatusBadRequest)
 		return
 	}
+
+	if err := validate.RunRequest(req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	log.Printf(
 		"language=%s tests=%d",
 		req.Language,
