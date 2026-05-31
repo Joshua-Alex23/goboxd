@@ -34,26 +34,42 @@ func Run(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	test := req.Tests[0]
+	results := make([]models.TestResult, 0, len(req.Tests))
+	allPassed := true
 
-	result, err := executor.Execute(
-		lang,
-		req.Source,
-		test.Stdin,
-	)
+	for _, test := range req.Tests {
 
-	if err != nil {
-		http.Error(
-			w,
-			err.Error(),
-			http.StatusInternalServerError,
+		result, err := executor.Execute(
+			lang,
+			req.Source,
+			test.Stdin,
 		)
-		return
+
+		if err != nil {
+			http.Error(
+				w,
+				err.Error(),
+				http.StatusInternalServerError,
+			)
+			return
+		}
+
+		passed := result.Stdout == test.ExpectedStdout
+
+		if !passed {
+			allPassed = false
+		}
+
+		results = append(results, models.TestResult{
+			Passed:   passed,
+			Actual:   result.Stdout,
+			Expected: test.ExpectedStdout,
+		})
 	}
 
 	resp := models.RunResponse{
-		Stdout: result.Stdout,
-		Stderr: result.Stderr,
+		Passed:  allPassed,
+		Results: results,
 	}
 
 	w.Header().Set(

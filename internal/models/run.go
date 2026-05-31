@@ -8,6 +8,7 @@ type TestCase struct {
 type RunRequest struct {
 	Language string     `json:"language"`
 	Source   string     `json:"source"`
+	Flags    []string   `json:"flags,omitempty"`
 	Tests    []TestCase `json:"tests"`
 }
 
