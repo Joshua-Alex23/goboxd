@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/thesouldev/goboxd/internal/config"
+	"github.com/thesouldev/goboxd/internal/queue"
 )
 
 func Info(w http.ResponseWriter, r *http.Request) {
@@ -12,10 +13,12 @@ func Info(w http.ResponseWriter, r *http.Request) {
 	languages := []string{}
 
 	for id := range config.Registry {
-		languages = append(
-			languages,
-			id,
-		)
+		languages = append(languages, id)
+	}
+
+	resp := map[string]any{
+		"languages": languages,
+		"workers":   cap(queue.Workers),
 	}
 
 	w.Header().Set(
@@ -23,9 +26,5 @@ func Info(w http.ResponseWriter, r *http.Request) {
 		"application/json",
 	)
 
-	json.NewEncoder(w).Encode(
-		map[string]any{
-			"languages": languages,
-		},
-	)
+	json.NewEncoder(w).Encode(resp)
 }

@@ -3,9 +3,7 @@ package executor
 import (
 	"context"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/thesouldev/goboxd/internal/config"
@@ -74,12 +72,12 @@ func Execute(
 			replacements,
 		)
 
-		buildCmd := exec.Command(
+		out, err := runProcess(
+			context.Background(),
 			lang.Build.Cmd,
-			buildArgs...,
+			buildArgs,
+			"",
 		)
-
-		out, err := buildCmd.CombinedOutput()
 		if err != nil {
 			return Result{
 				Stderr: truncateOutput(string(out)),
@@ -103,15 +101,12 @@ func Execute(
 	)
 	defer cancel()
 
-	cmd := exec.CommandContext(
+	out, err := runProcess(
 		ctx,
 		runCmdStr,
-		runArgs...,
+		runArgs,
+		stdin,
 	)
-
-	cmd.Stdin = strings.NewReader(stdin)
-
-	out, err := cmd.CombinedOutput()
 
 	if ctx.Err() == context.DeadlineExceeded {
 		return Result{
@@ -122,4 +117,13 @@ func Execute(
 	return Result{
 		Stdout: truncateOutput(string(out)),
 	}, err
+	// 	if err != nil {
+	// 		return Result{
+	// 			Stderr: truncateOutput(string(out)),
+	// 		}, nil
+	// 	}
+
+	//	return Result{
+	//		Stdout: truncateOutput(string(out)),
+	//	}, nil
 }

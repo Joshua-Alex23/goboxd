@@ -7,6 +7,7 @@ import (
 	"github.com/thesouldev/goboxd/internal/config"
 	"github.com/thesouldev/goboxd/internal/executor"
 	"github.com/thesouldev/goboxd/internal/models"
+	"github.com/thesouldev/goboxd/internal/queue"
 	"github.com/thesouldev/goboxd/internal/validate"
 )
 
@@ -33,7 +34,23 @@ func Run(w http.ResponseWriter, r *http.Request) {
 		)
 		return
 	}
+	if lang.Build != nil {
+		if err := validate.Flags(
+			req.Flags,
+			lang.Build.FlagAllowlist,
+		); err != nil {
 
+			http.Error(
+				w,
+				err.Error(),
+				http.StatusBadRequest,
+			)
+			return
+		}
+	}
+
+	queue.Acquire()
+	defer queue.Release()
 	results := make([]models.TestResult, 0, len(req.Tests))
 	allPassed := true
 
