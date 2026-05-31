@@ -1,0 +1,9 @@
+py3:
+  extension: py
+  command:
+    - python3
+
+cpp:
+  extension: cpp
+  command:
+    - g++
