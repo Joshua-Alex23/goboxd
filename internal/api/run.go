@@ -1,14 +1,12 @@
 package api
 
-
 import (
 	"encoding/json"
 	"net/http"
-	"log"
 
 	"github.com/thesouldev/goboxd/internal/models"
+	"github.com/thesouldev/goboxd/internal/runner"
 	"github.com/thesouldev/goboxd/internal/validate"
-	
 )
 
 func Run(w http.ResponseWriter, r *http.Request) {
@@ -24,14 +22,30 @@ func Run(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf(
-		"language=%s tests=%d",
-		req.Language,
-		len(req.Tests),
-	)
+	// log.Printf(
+	// 	"language=%s tests=%d",
+	// 	req.Language,
+	// 	len(req.Tests),
+	// )
+
+	// resp := models.RunResponse{
+	// 	Status: "accepted",
+	// }
+
+	if req.Language != "py3" {
+		http.Error(w, "unsupported language", http.StatusBadRequest)
+		return
+	}
+
+	result, err := runner.RunPython(req.Source)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	resp := models.RunResponse{
-		Status: "accepted",
+		Stdout: result.Stdout,
+		Stderr: result.Stderr,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
