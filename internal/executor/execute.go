@@ -9,7 +9,10 @@ import (
 	"time"
 
 	"github.com/thesouldev/goboxd/internal/config"
+	"github.com/thesouldev/goboxd/internal/validate"
 )
+
+const MaxOutputBytes = 1024 * 1024
 
 type Result struct {
 	Stdout string
@@ -27,6 +30,15 @@ func Execute(
 		return Result{}, err
 	}
 	defer os.RemoveAll(tmpDir)
+	if err := validate.Filename(lang.SourceFilename); err != nil {
+		return Result{}, err
+	}
+
+	if lang.Artifact != "" {
+		if err := validate.Filename(lang.Artifact); err != nil {
+			return Result{}, err
+		}
+	}
 
 	sourceFile := filepath.Join(
 		tmpDir,
@@ -70,7 +82,7 @@ func Execute(
 		out, err := buildCmd.CombinedOutput()
 		if err != nil {
 			return Result{
-				Stderr: string(out),
+				Stderr: truncateOutput(string(out)),
 			}, nil
 		}
 	}
@@ -108,6 +120,6 @@ func Execute(
 	}
 
 	return Result{
-		Stdout: string(out),
+		Stdout: truncateOutput(string(out)),
 	}, err
 }
