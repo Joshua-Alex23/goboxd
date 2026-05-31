@@ -5,12 +5,13 @@ import (
 	"net/http"
 
 	"github.com/thesouldev/goboxd/internal/config"
+	"github.com/thesouldev/goboxd/internal/executor"
 	"github.com/thesouldev/goboxd/internal/models"
-	"github.com/thesouldev/goboxd/internal/runner"
 	"github.com/thesouldev/goboxd/internal/validate"
 )
 
 func Run(w http.ResponseWriter, r *http.Request) {
+
 	var req models.RunRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -23,31 +24,28 @@ func Run(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, ok := config.Registry[req.Language]
+	lang, ok := config.Registry[req.Language]
 	if !ok {
-		http.Error(w, "unsupported language", http.StatusBadRequest)
+		http.Error(
+			w,
+			"unsupported language",
+			http.StatusBadRequest,
+		)
 		return
 	}
 
-	var (
-		result runner.Result
-		err    error
+	result, err := executor.Execute(
+		lang,
+		req.Source,
+		"",
 	)
 
-	switch req.Language {
-	case "py3":
-		result, err = runner.RunPython(req.Source, "")
-
-	case "cpp":
-		result, err = runner.RunCpp(req.Source, "")
-
-	default:
-		http.Error(w, "unsupported language", http.StatusBadRequest)
-		return
-	}
-
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(
+			w,
+			err.Error(),
+			http.StatusInternalServerError,
+		)
 		return
 	}
 
@@ -56,6 +54,10 @@ func Run(w http.ResponseWriter, r *http.Request) {
 		Stderr: result.Stderr,
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(
+		"Content-Type",
+		"application/json",
+	)
+
 	json.NewEncoder(w).Encode(resp)
 }
