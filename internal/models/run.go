@@ -11,7 +11,17 @@ type RunRequest struct {
 	Tests    []TestCase `json:"tests"`
 }
 
+type TestResult struct {
+	Passed   bool   `json:"passed"`
+	Actual   string `json:"actual"`
+	Expected string `json:"expected"`
+}
+
 type RunResponse struct {
 	Stdout string `json:"stdout"`
 	Stderr string `json:"stderr"`
+
+	Passed bool `json:"passed,omitempty"`
+
+	Results []TestResult `json:"results,omitempty"`
 }

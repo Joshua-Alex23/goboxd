@@ -15,7 +15,16 @@ func main() {
 	http.HandleFunc("/healthz", api.Healthz)
 	http.HandleFunc("/run", api.Run)
 
-	langs, err := config.Load("configs/languages.yaml")
+	cfg, err := config.Load("/configs/languages.yaml")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, lang := range cfg.Languages {
+		config.Registry[lang.ID] = lang
+	}
+
+	log.Printf("loaded %d languages", len(config.Registry))
 	if err != nil {
 		log.Fatal(err)
 	}

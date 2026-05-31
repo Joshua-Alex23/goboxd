@@ -1,9 +1,48 @@
-py3:
-  extension: py
-  command:
-    - python3
+languages:
+  - id: py3
+    name: Python 3
+    source_filename: solution.py
 
-cpp:
-  extension: cpp
-  command:
-    - g++
+    run:
+      cmd: python3
+      args:
+        - "{{source}}"
+
+      limits:
+        wall_time_s: 3
+        memory_kb: 131072
+        max_processes: 64
+
+  - id: cpp
+    name: C++
+
+    source_filename: solution.cpp
+    artifact: solution
+
+    build:
+      cmd: g++
+      args:
+        - "{{source}}"
+        - -o
+        - "{{artifact}}"
+
+      limits:
+        wall_time_s: 5
+        memory_kb: 262144
+        max_processes: 64
+
+      flag_allowlist:
+        - -O0
+        - -O1
+        - -O2
+        - -O3
+        - -Wall
+        - -Wextra
+
+    run:
+      cmd: "./{{artifact}}"
+
+      limits:
+        wall_time_s: 3
+        memory_kb: 131072
+        max_processes: 64

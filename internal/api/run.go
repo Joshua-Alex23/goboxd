@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/thesouldev/goboxd/internal/config"
 	"github.com/thesouldev/goboxd/internal/models"
 	"github.com/thesouldev/goboxd/internal/runner"
 	"github.com/thesouldev/goboxd/internal/validate"
@@ -32,10 +33,10 @@ func Run(w http.ResponseWriter, r *http.Request) {
 	// 	Status: "accepted",
 	// }
 
-	if req.Language != "py3" {
-		http.Error(w, "unsupported language", http.StatusBadRequest)
-		return
-	}
+	// if req.Language != "py3" {
+	// 	http.Error(w, "unsupported language", http.StatusBadRequest)
+	// 	return
+	// }
 
 	// lang, ok := languages[req.Language]
 	// if !ok {
@@ -43,7 +44,33 @@ func Run(w http.ResponseWriter, r *http.Request) {
 	// 	return
 	// }
 
-	result, err := runner.RunPython(req.Source)
+	// result, err := runner.RunPython(req.Source)
+	// if err != nil {
+	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+	// 	return
+	// }
+	_, ok := config.Registry[req.Language]
+	if !ok {
+		http.Error(w, "unsupported language", http.StatusBadRequest)
+		return
+	}
+	var (
+		result runner.Result
+		err    error
+	)
+
+	switch req.Language {
+	case "py3":
+		result, err = runner.RunPython(req.Source, "")
+
+	case "cpp":
+		result, err = runner.RunCpp(req.Source, "")
+
+	default:
+		http.Error(w, "unsupported language", http.StatusBadRequest)
+		return
+	}
+
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

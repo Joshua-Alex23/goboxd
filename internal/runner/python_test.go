@@ -4,7 +4,7 @@ import "testing"
 
 func TestRunPython(t *testing.T) {
 
-	result, err := RunPython(`print("hello")`)
+	result, err := RunPython(`print("hello")`, "")
 	if err != nil {
 		t.Fatal(err)
 	}

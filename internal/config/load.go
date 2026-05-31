@@ -6,17 +6,18 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func Load(path string) (Languages, error) {
-	var langs Languages
+func Load(path string) (*Config, error) {
+	var cfg Config
 
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
-	err = yaml.Unmarshal(data, &langs)
+
+	err = yaml.Unmarshal(data, &cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	return langs, nil
+	return &cfg, nil
 }
