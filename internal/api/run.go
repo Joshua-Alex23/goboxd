@@ -37,6 +37,12 @@ func Run(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// lang, ok := languages[req.Language]
+	// if !ok {
+	// 	http.Error(w, "unsupported language", http.StatusBadRequest)
+	// 	return
+	// }
+
 	result, err := runner.RunPython(req.Source)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

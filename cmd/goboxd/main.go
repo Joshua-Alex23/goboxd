@@ -3,8 +3,9 @@ package main
 import (
 	"log"
 	"net/http"
+
 	"github.com/thesouldev/goboxd/internal/api"
-	
+	"github.com/thesouldev/goboxd/internal/config"
 )
 
 func main() {
@@ -13,7 +14,12 @@ func main() {
 	// 	w.Write([]byte(`{"status":"ok"}`))
 	http.HandleFunc("/healthz", api.Healthz)
 	http.HandleFunc("/run", api.Run)
-	
+
+	langs, err := config.Load("configs/languages.yaml")
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("loaded languages: %v", langs)
 
 	log.Println("listening on :8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
