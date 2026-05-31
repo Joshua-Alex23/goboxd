@@ -34,10 +34,12 @@ func Run(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	test := req.Tests[0]
+
 	result, err := executor.Execute(
 		lang,
 		req.Source,
-		"",
+		test.Stdin,
 	)
 
 	if err != nil {
