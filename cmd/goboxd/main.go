@@ -11,6 +11,8 @@ import (
 func main() {
 	http.HandleFunc("/healthz", api.Healthz)
 	http.HandleFunc("/run", api.Run)
+	http.HandleFunc("/readyz", api.Readyz)
+	http.HandleFunc("/info", api.Info)
 
 	cfg, err := config.Load("/configs/languages.yaml")
 	if err != nil {
