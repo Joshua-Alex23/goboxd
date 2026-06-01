@@ -23,8 +23,8 @@ func main() {
 		config.Registry[lang.ID] = lang
 	}
 
-	log.Printf("loaded %d languages", len(config.Registry))
+	// log.Printf("loaded %d languages", len(config.Registry))
 
-	log.Println("listening on :8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	// log.Println("listening on :8080")
+	// log.Fatal(http.ListenAndServe(":8080", nil))
 }

@@ -4,7 +4,7 @@ languages:
     source_filename: solution.py
 
     run:
-      cmd: python3
+      cmd: /usr/bin/python3
       args:
         - "{{source}}"
 
@@ -20,9 +20,9 @@ languages:
     artifact: solution
 
     build:
-      cmd: g++
+      cmd: /usr/bin/g++
       args:
-        - "{{flags}}"
+        # - "{{flags}}"
         - "{{source}}"
         - -o
         - "{{artifact}}"
@@ -41,7 +41,7 @@ languages:
         - -Wextra
 
     run:
-      cmd: "./{{artifact}}"
+      cmd: "{{artifact}}"
 
       limits:
         wall_time_s: 3

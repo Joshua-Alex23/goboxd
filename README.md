@@ -20,10 +20,10 @@ goboxd is an HTTP service written in Go that compiles and runs untrusted code in
 ## Features
 
 - Plug and play language registry driven by YAML
-- Process isolation using Linux namespaces and cgroups
+- Code execution isolated with NSJail
 - Bounded concurrency with request queuing
 - Fully containerised for local development and deployment
-- Per request resource limits for time, memory, and processes
+- Per request execution time limits
 - Liveness and readiness probes for orchestration
 
 ## Getting started

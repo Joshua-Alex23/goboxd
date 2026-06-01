@@ -26,5 +26,7 @@ func Info(w http.ResponseWriter, r *http.Request) {
 		"application/json",
 	)
 
-	json.NewEncoder(w).Encode(resp)
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }

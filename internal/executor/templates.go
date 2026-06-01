@@ -4,11 +4,11 @@ import "strings"
 
 func renderTemplate(value string, replacements map[string]string) string {
 	for k, v := range replacements {
-		value = strings.ReplaceAll(
-			value,
-			"{{"+k+"}}",
-			v,
-		)
+		if v == "" {
+			value = strings.ReplaceAll(value, "{{"+k+"}}", "")
+		} else {
+			value = strings.ReplaceAll(value, "{{"+k+"}}", v)
+		}
 	}
 
 	return value

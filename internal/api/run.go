@@ -3,25 +3,31 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/thesouldev/goboxd/internal/config"
 	"github.com/thesouldev/goboxd/internal/executor"
 	"github.com/thesouldev/goboxd/internal/models"
-	"github.com/thesouldev/goboxd/internal/queue"
-	"github.com/thesouldev/goboxd/internal/validate"
 )
 
 func Run(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(
+			w,
+			"method not allowed",
+			http.StatusMethodNotAllowed,
+		)
+		return
+	}
 
 	var req models.RunRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid json", http.StatusBadRequest)
-		return
-	}
-
-	if err := validate.RunRequest(req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(
+			w,
+			`{"error":{"code":"invalid_json","message":"bad request"}}`,
+			http.StatusBadRequest,
+		)
 		return
 	}
 
@@ -29,64 +35,72 @@ func Run(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		http.Error(
 			w,
-			"unsupported language",
+			`{"error":{"code":"unknown_language","message":"language not registered"}}`,
 			http.StatusBadRequest,
 		)
 		return
 	}
-	if lang.Build != nil {
-		if err := validate.Flags(
-			req.Flags,
-			lang.Build.FlagAllowlist,
-		); err != nil {
 
-			http.Error(
-				w,
-				err.Error(),
-				http.StatusBadRequest,
-			)
-			return
-		}
+	if req.ArtifactFilename != "" {
+		lang.Artifact = req.ArtifactFilename
 	}
 
-	queue.Acquire()
-	defer queue.Release()
-	results := make([]models.TestResult, 0, len(req.Tests))
-	allPassed := true
+	if len(req.Tests) == 0 {
+		http.Error(
+			w,
+			`{"error":{"code":"invalid_request","message":"at least one test required"}}`,
+			http.StatusBadRequest,
+		)
+		return
+	}
 
-	for _, test := range req.Tests {
+	results := make(
+		[]models.TestResult,
+		0,
+		len(req.Tests),
+	)
 
-		result, err := executor.Execute(
+	finalStatus := "accepted"
+
+	build := models.BuildResult{
+		Status: "ok",
+	}
+
+	for _, tc := range req.Tests {
+		out, _ := executor.Execute(
 			lang,
 			req.Source,
-			test.Stdin,
+			tc.Stdin,
+			nil,
 		)
 
-		if err != nil {
-			http.Error(
-				w,
-				err.Error(),
-				http.StatusInternalServerError,
-			)
-			return
+		status := "accepted"
+
+		if out.Stderr != "" {
+			status = "runtime_error"
+		} else if strings.TrimSpace(out.Stdout) != strings.TrimSpace(tc.ExpectedStdout) {
+			status = "wrong_output"
 		}
 
-		passed := result.Stdout == test.ExpectedStdout
-
-		if !passed {
-			allPassed = false
+		if status != "accepted" &&
+			finalStatus == "accepted" {
+			finalStatus = status
 		}
 
-		results = append(results, models.TestResult{
-			Passed:   passed,
-			Actual:   result.Stdout,
-			Expected: test.ExpectedStdout,
-		})
+		results = append(
+			results,
+			models.TestResult{
+				Status: status,
+				Stdout: out.Stdout,
+				Stderr: out.Stderr,
+			},
+		)
 	}
 
 	resp := models.RunResponse{
-		Passed:  allPassed,
-		Results: results,
+		Status: finalStatus,
+		Build:  build,
+		Tests:  results,
 	}
 
 	w.Header().Set(
@@ -94,5 +108,11 @@ func Run(w http.ResponseWriter, r *http.Request) {
 		"application/json",
 	)
 
-	json.NewEncoder(w).Encode(resp)
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		http.Error(
+			w,
+			err.Error(),
+			http.StatusInternalServerError,
+		)
+	}
 }

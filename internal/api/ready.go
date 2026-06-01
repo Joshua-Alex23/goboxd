@@ -7,7 +7,6 @@ import (
 )
 
 func Readyz(w http.ResponseWriter, r *http.Request) {
-
 	checks := map[string]bool{}
 
 	commands := []string{
@@ -16,30 +15,27 @@ func Readyz(w http.ResponseWriter, r *http.Request) {
 		"nsjail",
 	}
 
-	ready := true
+	status := "ready"
 
 	for _, cmd := range commands {
-
 		_, err := exec.LookPath(cmd)
 
 		ok := err == nil
-
 		checks[cmd] = ok
 
 		if !ok {
-			ready = false
+			status = "not_ready"
 		}
 	}
 
-	w.Header().Set(
-		"Content-Type",
-		"application/json",
-	)
+	w.Header().Set("Content-Type", "application/json")
 
-	json.NewEncoder(w).Encode(
-		map[string]any{
-			"ready":  ready,
-			"checks": checks,
-		},
-	)
+	resp := map[string]any{
+		"status": status,
+		"checks": checks,
+	}
+
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/thesouldev/goboxd/internal/config"
@@ -21,6 +22,7 @@ func Execute(
 	lang config.Language,
 	source string,
 	stdin string,
+	flags []string,
 ) (Result, error) {
 
 	tmpDir, err := os.MkdirTemp("", "goboxd-*")
@@ -28,6 +30,7 @@ func Execute(
 		return Result{}, err
 	}
 	defer os.RemoveAll(tmpDir)
+
 	if err := validate.Filename(lang.SourceFilename); err != nil {
 		return Result{}, err
 	}
@@ -43,16 +46,19 @@ func Execute(
 		lang.SourceFilename,
 	)
 
-	err = os.WriteFile(
+	if err := os.WriteFile(
 		sourceFile,
 		[]byte(source),
 		0644,
-	)
-	if err != nil {
+	); err != nil {
 		return Result{}, err
 	}
 
-	artifactPath := ""
+	artifactPath := filepath.Join(
+		tmpDir,
+		"a.out",
+	)
+
 	if lang.Artifact != "" {
 		artifactPath = filepath.Join(
 			tmpDir,
@@ -63,21 +69,38 @@ func Execute(
 	replacements := map[string]string{
 		"source":   sourceFile,
 		"artifact": artifactPath,
+		"flags":    "",
 	}
 
+	if len(flags) > 0 {
+		replacements["flags"] = strings.Join(
+			flags,
+			" ",
+		)
+	}
+
+	// ================= BUILD =================
+
 	if lang.Build != nil {
+
+		buildCmd := renderTemplate(
+			lang.Build.Cmd,
+			replacements,
+		)
 
 		buildArgs := renderArgs(
 			lang.Build.Args,
 			replacements,
 		)
 
-		out, err := runProcess(
+		out, err := runRawProcess(
 			context.Background(),
-			lang.Build.Cmd,
+			buildCmd,
 			buildArgs,
 			"",
+			tmpDir,
 		)
+
 		if err != nil {
 			return Result{
 				Stderr: truncateOutput(string(out)),
@@ -85,7 +108,9 @@ func Execute(
 		}
 	}
 
-	runCmdStr := renderTemplate(
+	// ================= RUN =================
+
+	runCmd := renderTemplate(
 		lang.Run.Cmd,
 		replacements,
 	)
@@ -97,15 +122,16 @@ func Execute(
 
 	ctx, cancel := context.WithTimeout(
 		context.Background(),
-		2*time.Second,
+		time.Duration(lang.Run.Limits.WallTimeS)*time.Second,
 	)
 	defer cancel()
 
 	out, err := runProcess(
 		ctx,
-		runCmdStr,
+		runCmd,
 		runArgs,
 		stdin,
+		tmpDir,
 	)
 
 	if ctx.Err() == context.DeadlineExceeded {
@@ -114,16 +140,13 @@ func Execute(
 		}, nil
 	}
 
+	if err != nil {
+		return Result{
+			Stderr: truncateOutput(string(out)),
+		}, nil
+	}
+
 	return Result{
 		Stdout: truncateOutput(string(out)),
-	}, err
-	// 	if err != nil {
-	// 		return Result{
-	// 			Stderr: truncateOutput(string(out)),
-	// 		}, nil
-	// 	}
-
-	//	return Result{
-	//		Stdout: truncateOutput(string(out)),
-	//	}, nil
+	}, nil
 }
